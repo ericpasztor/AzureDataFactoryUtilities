@@ -1,0 +1,12 @@
+{
+    "name": "dssqlserver",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "lssqlservernonprod",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "SqlServerTable",
+        "schema": []
+    }
+}
