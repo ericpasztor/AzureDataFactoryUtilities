@@ -1,0 +1,327 @@
+{
+    "name": "pl-extract-sql-raw",
+    "properties": {
+        "activities": [
+            {
+                "name": "lkp-generate-sql",
+                "type": "Lookup",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "[config].[generateIngestionSQL]",
+                        "storedProcedureParameters": {
+                            "dataSourceName": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().parameters.dataSourceName",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "dsazuresql",
+                        "type": "DatasetReference"
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "forEach-source",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "lkp-generate-sql",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('lkp-generate-sql').output.value",
+                        "type": "Expression"
+                    },
+                    "activities": [
+                        {
+                            "name": "copy-src-to-blob",
+                            "type": "Copy",
+                            "dependsOn": [
+                                {
+                                    "activity": "sp-log-pipeline-run",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SqlServerSource",
+                                    "sqlReaderQuery": {
+                                        "value": "@concat(\nitem().extractSQL, \n' AND ', \nitem().watermarkFieldName, \n' <= ', \n'CAST(''', \nactivity('lkp-src-watermark').output.firstRow.watermarkCurrentValue,\n''' as DATETIME2(0))'\n)",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "sink": {
+                                    "type": "DelimitedTextSink",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSWriteSettings"
+                                    },
+                                    "formatSettings": {
+                                        "type": "DelimitedTextWriteSettings",
+                                        "quoteAllText": true,
+                                        "fileExtension": ".txt"
+                                    }
+                                },
+                                "enableStaging": false,
+                                "translator": {
+                                    "type": "TabularTranslator",
+                                    "typeConversion": true,
+                                    "typeConversionSettings": {
+                                        "allowDataTruncation": true,
+                                        "treatBooleanAsNumber": false
+                                    }
+                                }
+                            },
+                            "inputs": [
+                                {
+                                    "referenceName": "dssqlserver",
+                                    "type": "DatasetReference"
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "referenceName": "dsblobraw",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "containerName": {
+                                            "value": "@pipeline().parameters.containerName",
+                                            "type": "Expression"
+                                        },
+                                        "directoryName": {
+                                            "value": "@pipeline().parameters.directoryName",
+                                            "type": "Expression"
+                                        },
+                                        "fileName": {
+                                            "value": "@concat(item().tableName, '_', formatDateTime(convertTimeZone(utcnow(), 'UTC', 'Eastern Standard Time'), 'yyyMMdd_HHmmss'))",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "lkp-src-watermark",
+                            "type": "Lookup",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SqlServerSource",
+                                    "sqlReaderQuery": {
+                                        "value": "@item().lkpWatermarkSQL",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "dssqlserver",
+                                    "type": "DatasetReference"
+                                }
+                            }
+                        },
+                        {
+                            "name": "sp-log-pipeline-run",
+                            "type": "SqlServerStoredProcedure",
+                            "dependsOn": [
+                                {
+                                    "activity": "lkp-src-watermark",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "storedProcedureName": "[logging].[insertPipelineRunHistory]",
+                                "storedProcedureParameters": {
+                                    "pipelineName": {
+                                        "value": {
+                                            "value": "@pipeline().Pipeline",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "tableId": {
+                                        "value": {
+                                            "value": "@item().tableId",
+                                            "type": "Expression"
+                                        },
+                                        "type": "Int32"
+                                    },
+                                    "tableName": {
+                                        "value": {
+                                            "value": "@item().tableName",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "watermarkCurrentValue": {
+                                        "value": {
+                                            "value": "@activity('lkp-src-watermark').output.firstRow.watermarkCurrentValue",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "watermarkPreviousValue": {
+                                        "value": {
+                                            "value": "@item().watermarkPreviousValue",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    }
+                                }
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "lssqldbdenonprod",
+                                "type": "LinkedServiceReference"
+                            }
+                        },
+                        {
+                            "name": "sp-update-pipeline-run-success",
+                            "type": "SqlServerStoredProcedure",
+                            "dependsOn": [
+                                {
+                                    "activity": "copy-src-to-blob",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "storedProcedureName": "[logging].[updatePipelineRunHistory]",
+                                "storedProcedureParameters": {
+                                    "pipelineRunStatus": {
+                                        "value": "Succeeded",
+                                        "type": "String"
+                                    },
+                                    "tableId": {
+                                        "value": {
+                                            "value": "@item().tableId",
+                                            "type": "Expression"
+                                        },
+                                        "type": "Int32"
+                                    }
+                                }
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "lssqldbdenonprod",
+                                "type": "LinkedServiceReference"
+                            }
+                        },
+                        {
+                            "name": "sp-update-pipeline-run-failed",
+                            "type": "SqlServerStoredProcedure",
+                            "dependsOn": [
+                                {
+                                    "activity": "copy-src-to-blob",
+                                    "dependencyConditions": [
+                                        "Failed"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "storedProcedureName": "[logging].[updatePipelineRunHistory]",
+                                "storedProcedureParameters": {
+                                    "pipelineRunStatus": {
+                                        "value": "Failed",
+                                        "type": "String"
+                                    },
+                                    "tableId": {
+                                        "value": {
+                                            "value": "@item().tableId",
+                                            "type": "Expression"
+                                        },
+                                        "type": "Int32"
+                                    }
+                                }
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "lssqldbdenonprod",
+                                "type": "LinkedServiceReference"
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "parameters": {
+            "dataSourceName": {
+                "type": "string",
+                "defaultValue": "Chinook"
+            },
+            "containerName": {
+                "type": "string",
+                "defaultValue": "raw"
+            },
+            "directoryName": {
+                "type": "string",
+                "defaultValue": "chinook\\inbound"
+            }
+        },
+        "annotations": []
+    }
+}
