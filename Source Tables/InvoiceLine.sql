@@ -1,0 +1,39 @@
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[InvoiceLine](
+	[InvoiceLineId] [int] NOT NULL,
+	[InvoiceId] [int] NOT NULL,
+	[TrackId] [int] NOT NULL,
+	[UnitPrice] [numeric](10, 2) NOT NULL,
+	[Quantity] [int] NOT NULL,
+	[invoiceLineDatetime] [datetime2](0) NOT NULL,
+ CONSTRAINT [PK_InvoiceLine] PRIMARY KEY CLUSTERED 
+(
+	[InvoiceLineId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IFK_InvoiceLineInvoiceId] ON [dbo].[InvoiceLine]
+(
+	[InvoiceId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IFK_InvoiceLineTrackId] ON [dbo].[InvoiceLine]
+(
+	[TrackId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[InvoiceLine] ADD  DEFAULT (sysdatetime()) FOR [invoiceLineDatetime]
+GO
+ALTER TABLE [dbo].[InvoiceLine]  WITH CHECK ADD  CONSTRAINT [FK_InvoiceLineInvoiceId] FOREIGN KEY([InvoiceId])
+REFERENCES [dbo].[Invoice] ([InvoiceId])
+GO
+ALTER TABLE [dbo].[InvoiceLine] CHECK CONSTRAINT [FK_InvoiceLineInvoiceId]
+GO
+ALTER TABLE [dbo].[InvoiceLine]  WITH CHECK ADD  CONSTRAINT [FK_InvoiceLineTrackId] FOREIGN KEY([TrackId])
+REFERENCES [dbo].[Track] ([TrackId])
+GO
+ALTER TABLE [dbo].[InvoiceLine] CHECK CONSTRAINT [FK_InvoiceLineTrackId]
+GO
