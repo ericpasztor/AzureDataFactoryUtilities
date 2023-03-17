@@ -1,8 +1,8 @@
-## Sample Database
+## Overview
 
 The Chinook sample database is open source, and available via the public GitHub repository located here: https://github.com/lerocha/chinook-database. Details regarding supported relational database platforms, business functions represented by the database, and data definition import scripts are available within this repository.
 
-## Import Instructions
+## Usage
 
 Utilities are available within this local repository's Source Tables folder to recreate the database tables and import sample data according to SQL Server and MySQL database platforms.
 
