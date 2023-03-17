@@ -1,6 +1,6 @@
 ## Overview
 
-The purpose of this repository is to demonstrate a metadata-driven framework for performing Data Ingestion activities between source relational database management systems (RDBMS') such as SQL Server, and target Microsoft Azure-based data platforms such as Azure Data Lake Storage. Azure Data Factory is the service used to orchestration purposes, and invokes collection of stored procedures and control tables referenced in an Azure SQL Database.
+The purpose of this repository is to demonstrate a metadata-driven framework for performing Data Ingestion activities between source relational database management systems (RDBMS') such as SQL Server, and target Microsoft Azure-based data platforms such as Azure Data Lake Storage. Azure Data Factory is the service used to orchestration purposes, and invokes collection of stored procedures and control tables referenced in an Azure SQL Database. When using this framework, a single Azure Data Factory pipeline dynamically generates Structured Query Language (SQL) statements for a collection of source tables, applies relevant incremental filtering conditions by source table, executes a Copy activity between the specified Source and Sink, and records logging information during execution, including start times, end times, and pipeline run status.
 
 ## Prerequisites
 
