@@ -1,0 +1,44 @@
+{
+    "name": "dsazuresql",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "lssqldbdenonprod",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "AzureSqlTable",
+        "schema": [
+            {
+                "name": "tableId",
+                "type": "int",
+                "precision": 10
+            },
+            {
+                "name": "tableName",
+                "type": "varchar"
+            },
+            {
+                "name": "watermarkFieldName",
+                "type": "varchar"
+            },
+            {
+                "name": "ingestionActiveFlag",
+                "type": "varchar"
+            },
+            {
+                "name": "ingestionStartDate",
+                "type": "datetime2",
+                "scale": 0
+            },
+            {
+                "name": "ingestionEndDate",
+                "type": "datetime2",
+                "scale": 0
+            },
+            {
+                "name": "activeRecordFl",
+                "type": "varchar"
+            }
+        ]
+    }
+}
