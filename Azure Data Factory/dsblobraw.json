@@ -1,0 +1,43 @@
+{
+    "name": "dsblobraw",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "lsadlsdenonprod",
+            "type": "LinkedServiceReference"
+        },
+        "parameters": {
+            "containerName": {
+                "type": "String"
+            },
+            "directoryName": {
+                "type": "String"
+            },
+            "fileName": {
+                "type": "String"
+            }
+        },
+        "annotations": [],
+        "type": "DelimitedText",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobFSLocation",
+                "fileName": {
+                    "value": "@dataset().fileName",
+                    "type": "Expression"
+                },
+                "folderPath": {
+                    "value": "@dataset().directoryName",
+                    "type": "Expression"
+                },
+                "fileSystem": {
+                    "value": "@dataset().containerName",
+                    "type": "Expression"
+                }
+            },
+            "columnDelimiter": "|",
+            "escapeChar": "\\",
+            "quoteChar": "\""
+        },
+        "schema": []
+    }
+}
